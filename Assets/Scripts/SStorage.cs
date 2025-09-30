@@ -5,7 +5,7 @@ using System.Text;
 
 public static class SecureStorage
 {
-    private static string key = "1b60caf7d2654b677eae66a7c54ac5912bc1235103215537043131417f1bb765cf89c6dee06b657c891aaca13c1dbfd1a84757599249c44b882ffb81eee0ef90";
+    private static string key = "12334567890"; // ключ-секрет заменён за заглушку
 
     public static void Save(string id, string value)
     {
