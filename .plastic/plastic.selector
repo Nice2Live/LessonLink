@@ -1,3 +1,0 @@
-repository "LessonLink/LessonLink@7972473762508@cloud"
-  path "/"
-    smartbranch "/main/alpha" changeset "46"   
