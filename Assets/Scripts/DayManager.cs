@@ -13,6 +13,7 @@ public class DayManager : MonoBehaviour
     public ChoiceLessonManager choiceLessonManager;
     public List<Button> dayButtons;
     public TMP_Text Logtext;
+    public LoadAnimation loadAnimation;
 
     private int now = -1;
     private List<int> OTtimes = new List<int>() { 000, 915, 1015, 1120, 1220, 1320, 1425, 1525 };
@@ -23,10 +24,9 @@ public class DayManager : MonoBehaviour
     private int togglelessons = -1;
     private int inttoggle;
     private List<string> weekNow;
-
     private bool start = true;
-    private bool start2 = true;
     private bool updateTime = true;
+    private bool resetTime = true;
 
 
     void Awake()
@@ -42,14 +42,16 @@ public class DayManager : MonoBehaviour
 
     public async Task Toggle(int value)
     {
-        if (now == value) return;
+        if (!resetTime || now == value) return;
+        resetTime = false;
 
         if (now == -1) dayanimator.SetTrigger($"3to{value}");
         else dayanimator.SetTrigger($"{now}to{value}");
         now = value;
 
-        if (start2) { start2 = false; await Task.Delay(500); }
         lessons.GetLessons(true);
+        await Task.Delay(75);
+        resetTime = true;
     }
     void Update()
     {
@@ -114,6 +116,7 @@ public class DayManager : MonoBehaviour
                     {
                         if (time >= DOtimes[DOtimes.Count - 1])
                         {
+                            loadAnimation.Reload();
                             if (i <= 3) inttoggle = i + 2;
                             else { inttoggle = 1; Weekmanager.Toggle("2"); }
                         }
@@ -132,6 +135,7 @@ public class DayManager : MonoBehaviour
                 {
                     if (togglelessons != i && OTtimes[i] <= time && DOtimes[i] > time)
                     {
+                        loadAnimation.Reload();
                         togglelessons = i;
                         choiceLessonManager.SwitchButtonSwipe(i + 1);
                         break;
@@ -155,7 +159,7 @@ public class DayManager : MonoBehaviour
         DateTime datenow = DateTime.Now;
         DayOfWeek dayOfWeek = datenow.DayOfWeek;
         string day = dayOfWeek.ToString();
-        Debug.Log(weekdays.IndexOf(day) + 1);
+        //Debug.Log(weekdays.IndexOf(day) + 1);
         return weekdays.IndexOf(day) + 1 > 5 ? 5 : weekdays.IndexOf(day) + 1;
     }
 }

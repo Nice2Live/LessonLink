@@ -17,71 +17,47 @@ public class WebViewMos : MonoBehaviour
     public AccInfo accinfo;
     public Lessons lessons;
     public ExitAcc exitAcc;
+    public Grades grades;
+    public BottonButtons bottonButtons;
 
     private WebViewObject webView;
-    private string startUrl = "https://school.mos.ru/v3/auth/sudir/login";
     public Animator animatorLoad;
     private bool hasCollectedCookie = false;
-    private bool hasExit = false;
-    private bool refresh_token = false;
-    private bool LoadLesson = true;
-    private bool refreshLessonNonInternet = true;
+    // private bool hasExit = false;
 
     void Awake()
     {
-        entryBut.onClick.AddListener(() => Entry(true, false));
+        entryBut.onClick.AddListener(() => Entry());
     }
-
-    public void Exit()
+    public void RefreshToken(string Url = "https://school.mos.ru/v3/auth/sudir/login", bool diary = false, bool grade = false, bool profile = false, bool showDiary = false, bool accInfo = false, bool exit = false)
     {
-        startUrl = "https://school.mos.ru/v3/auth/logout";
         hasCollectedCookie = false;
-        hasExit = true;
-        Entry(false, false);
-    }
-    public void Entry(bool Load, bool refresh)
-    {
-        LoadLesson = Load;
-        hasCollectedCookie = false;
-        refresh_token = refresh;
+        CloseWebView();
         if (webView == null)
-        {
-            webView = (new GameObject("WebViewObject")).AddComponent<WebViewObject>();
-            webView.Init(
-                cb: async (msg) => { },
-                err: async (msg) =>
-                {
-                    if (SecureStorage.Load("Entry") == "true")
-                    {
-                        if (refreshLessonNonInternet)
-                        {
-                            refreshLessonNonInternet = false;
-                            await Task.Delay(5000);
-                            lessons.GetLessons(false);
-                            refreshLessonNonInternet = true;
-                        }
-                    }
-                    else
-                    {
-                        await Task.Delay(5000);
-                        Entry(false, true);
-                    }    
-                },
-                started: (msg) => { },
-                ld: OnPageLoaded
-            );
-
-            webView.SetMargins(0, 0, 0, 0);
-        }
-        if (Load)
-        {
-            webView.SetVisibility(true);
-        }
-        webView.LoadURL(startUrl);
-        startUrl = "https://school.mos.ru/v3/auth/sudir/login";
+            CreateWebView(diary: diary, grade: grade, profile: profile, showDiary: showDiary, accInfo: accInfo, exit: exit);
+        webView.LoadURL(Url);
+    }
+    public void Entry()
+    {
+        hasCollectedCookie = false;
+        if (webView == null)
+            CreateWebView();
+        webView.LoadURL("https://school.mos.ru/v3/auth/sudir/login");
+        webView.SetVisibility(true);
+    }
+    private void CreateWebView(bool diary = false, bool grade = false, bool profile = false, bool showDiary = false, bool accInfo = false, bool exit = false)
+    {
+        webView = (new GameObject("WebViewObject")).AddComponent<WebViewObject>();
+        webView.Init(
+            cb: async (msg) => { },
+            err: async (msg) => { },
+            started: (msg) => { },
+            ld: (url) => OnPageLoaded(url, diary, grade, profile, showDiary, accInfo, exit)
+        );
+        webView.SetMargins(0, 0, 0, 0);
     }
 
-    private async void OnPageLoaded(string url)
+    private async void OnPageLoaded(string url, bool diary, bool grade, bool profile, bool showDiary, bool accInfo, bool exit)
     {
         if (!hasCollectedCookie && url.Contains("https://school.mos.ru/diary/"))
         {
@@ -91,37 +67,45 @@ public class WebViewMos : MonoBehaviour
                 animatorLoad?.SetTrigger("Load");
                 StartCoroutine(cookies.CollectAuthTokenRoutine());
                 CloseWebView();
+                //Log("Entry1");
                 if (!(await accinfo.GetAccInfo()))
                 {
                     animatorLoad?.SetTrigger("CloseLoad");
                     entryBut.gameObject.SetActive(true);
                     return;
                 }
-                    
+                //Log("Entry2");
                 if (!(await lessons.GetWeekLessons()))
                 {
                     animatorLoad?.SetTrigger("CloseLoad");
                     entryBut.gameObject.SetActive(true);
                     return;
-                }    
+                }
+                //Log("Entry3");
                 entryBut.gameObject.SetActive(false);
-                lessons.GetLessons(true);
+                bottonButtons.Toggle(1);
                 hasCollectedCookie = true;
+                //Log("Entry4");
+                if (diary)
+                    lessons.GetLessons(true);
+                return;
             }
-            else
-            {
-                StartCoroutine(cookies.CollectAuthTokenRoutine());
-                if (refresh_token) { refresh_token = false; lessons.GetLessons(LoadLesson); }
-                hasCollectedCookie = true;
-                CloseWebView();
-            }
+            
+            StartCoroutine(cookies.CollectAuthTokenRoutine());
+            if (diary)
+                lessons.GetLessons(showDiary);
+            if (accInfo)
+                accinfo.GetAccInfo();
+            if (grade)
+                grades.GetGrades(true);
+            hasCollectedCookie = true;
+            CloseWebView();
         }
-        if (hasExit && url.Contains("https://school.mos.ru/v3/auth/logout"))
+        if (exit && url.Contains("https://school.mos.ru/"))
         {
-            await Task.Delay(3000);
-            entryBut.interactable = true;
-            hasExit = false;
-            exitAcc.ExitWebView();
+            animatorLoad.SetTrigger("CloseLoad");
+            await Task.Delay(100);
+            entryBut.gameObject.SetActive(true);
         }
     }
 

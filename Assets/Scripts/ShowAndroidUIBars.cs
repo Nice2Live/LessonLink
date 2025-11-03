@@ -28,7 +28,7 @@ public class ShowAndroidUIBars : MonoBehaviour
                 window.Call("setStatusBarColor", ToAndroidColor(new Color(13f / 255f, 18f / 255f, 30f / 255f))); 
 
                 // Цвет навигационной панели (нижняя панель)
-                window.Call("setNavigationBarColor", ToAndroidColor(new Color(13f / 255f, 18f / 255f, 30f / 255f)));
+                window.Call("setNavigationBarColor", ToAndroidColor(new Color(31f / 255f, 41f / 255f, 55f / 255f)));
             }
         }
         catch (System.Exception e)

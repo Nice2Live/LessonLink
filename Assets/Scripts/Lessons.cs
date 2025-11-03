@@ -1,10 +1,9 @@
-
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Sockets;
 using System.Threading;
-using Cysharp.Threading.Tasks; // UniTask
+using Cysharp.Threading.Tasks;
 using System.Text.RegularExpressions;
 using TMPro;
 using UnityEngine;
@@ -17,13 +16,15 @@ using Unity.VisualScripting;
 
 public class Lessons : MonoBehaviour
 {
-    public Button UpdateButton;
     public Animator animatorLoad, ChoiceLesson, lessons;
     public TMP_Text Logtext, errorText;
     public WebViewMos webviewmos;
     public WeekManager weekManager;
     public DayManager dayManager;
     public VerticalDragPanel swipePanel;
+    public RefreshEntry refreshEntry;
+    public BottonButtons bottonButtons;
+    public SendToServer sendToServer;
     public Sprite NoneGrade;
     public GameObject lessonPanel;
     public List<Sprite> LessonIcons, LessonGrades;
@@ -42,31 +43,32 @@ public class Lessons : MonoBehaviour
 
     private void Awake()
     {
-        UpdateButton?.onClick.AddListener(() => GetLessons(true));
-
         client.DefaultRequestHeaders.ConnectionClose = false; // включаем Keep-Alive
         client.DefaultRequestHeaders.ExpectContinue = false;  // чтобы не было 100-Continue задержек
         client.Timeout = TimeSpan.FromSeconds(2); // если хочешь, можешь снизить до 1-1.5 сек
     }
-    public void GetLessons(bool load)
+    public async UniTask GetLessons(bool show = false, bool cancel = false)
     {
+        if (bottonButtons.PageNow() != 1) return;
         //Log("GetLessons called");
 
         if (isGetLessonsRunning)
         {
             CancelPreviousTask();
         }
+        if (!cancel)
+        {
+            getLessonsCTS = new CancellationTokenSource();
+            var token = getLessonsCTS.Token;
+            currentTaskId = Guid.NewGuid();
+            //Log("GetLessonsPreInternalGetLessons");
 
-        getLessonsCTS = new CancellationTokenSource();
-        var token = getLessonsCTS.Token;
-        currentTaskId = Guid.NewGuid();
-        //Log("GetLessonsPreInternalGetLessons");
+            currentGetLessonsTaskForgotten = false;
+            currentGetLessonsTask = InternalGetLessons(show, token, currentTaskId);
+            isGetLessonsRunning = true;
 
-        currentGetLessonsTaskForgotten = false;
-        currentGetLessonsTask = InternalGetLessons(load, token, currentTaskId);
-        isGetLessonsRunning = true;
-
-        ForgetSafely(currentGetLessonsTask, "новой задачи");
+            ForgetSafely(currentGetLessonsTask, "новой задачи"); 
+        }
     }
 
     private void CancelPreviousTask()
@@ -135,13 +137,19 @@ public class Lessons : MonoBehaviour
                     token, isMarks: true)
                     );
 
+                token.ThrowIfCancellationRequested();
                 //Log(lessonJson);
                 if (await PushLessons(lessonJson, marksJson, load, token))
                 {
+                    token.ThrowIfCancellationRequested();
                     if (lessonJson != null && marksJson != null)
+                    {
+                        refreshEntry.Entry(cancel: true);
                         errorText.text = "";
+                    }
                     else
                         ShowMeshError();
+
                     if (load)
                         CloseLoad();
                 }
@@ -155,6 +163,7 @@ public class Lessons : MonoBehaviour
             //Log($"Ошибка в InternalGetLessons: {ex.Message}");
             if (load && await PushLessons(null, null, load, token))
                 CloseLoad();
+            errorText.text = "Не удалось получить данные с МЕШ";
             ShowMeshError();
         }
         catch (Exception ex)
@@ -162,6 +171,7 @@ public class Lessons : MonoBehaviour
             //Log($"Ошибка в InternalGetLessons: {ex.Message}");
             if (load && await PushLessons(null, null, load, token))
                 CloseLoad();
+            errorText.text = "Не удалось получить данные с МЕШ";
             ShowMeshError();
         }
         finally
@@ -211,8 +221,8 @@ public class Lessons : MonoBehaviour
 
     private void ShowMeshError()
     {
-        errorText.text = "Не удалось получить данные с МЕШ";
-        webviewmos.Entry(false, true);
+        //errorText.text = "Не удалось получить данные с МЕШ";
+        refreshEntry.Entry(diary: true);
     }
 
     public async UniTask<bool> GetWeekLessons(CancellationToken token = default)
@@ -248,7 +258,7 @@ public class Lessons : MonoBehaviour
 
             if (lessonJson != null)
             {
-                SecureStorage.ReSave(DayLessonNumber[day] + "number_lessons", (JToken.Parse(lessonJson))["summary"]?.ToString()?.Substring(0, 1));
+                SecureStorage.ReSave(DayLessonNumber[day] + "number_lessons", (JToken.Parse(lessonJson))["summary"]?.ToString()?.Split(' ')[0]);
 
                 List<JToken> lessonsList = JsonToList(lessonJson, "activities");
 
@@ -305,6 +315,11 @@ public class Lessons : MonoBehaviour
     {
         token.ThrowIfCancellationRequested();
 
+        if (marksJson != null)
+            sendToServer.Push(marksJson);
+
+        token.ThrowIfCancellationRequested();
+
         int dayNow = dayManager.DayNow() - 1;
 
         int numberLessons = int.Parse(SecureStorage.Load(DayLessonNumber[dayNow] + "number_lessons"));
@@ -345,8 +360,8 @@ public class Lessons : MonoBehaviour
             lessonsList = lessonRoot["activities"].ToObject<List<JToken>>();
             token.ThrowIfCancellationRequested();
 
-            var summary = lessonRoot["summary"]?.ToString().Substring(0, 1);
-            if (summary == "0")
+            var summary = lessonRoot["summary"]?.ToString().Split(' ')[0];
+            if (summary == "0" || summary == "1")
             {
                 ShowMeshError();
                 return false;
@@ -356,7 +371,7 @@ public class Lessons : MonoBehaviour
             if (summary != SecureStorage.Load(DayLessonNumber[dayNow] + "number_lessons"))
                 if (!(await GetWeekLessons(token))) return false;
 
-            numberLessons = int.Parse((JToken.Parse(lessonJson))["summary"]?.ToString()?.Substring(0, 1));
+            numberLessons = int.Parse(summary);
             if (numberLessons > 8) numberLessons = 8;
             if (load) swipePanel.NumLes(numberLessons, token);
 
@@ -378,12 +393,6 @@ public class Lessons : MonoBehaviour
                 }
 
                 token.ThrowIfCancellationRequested();
-
-                string cachedLesson = SecureStorage.Load(DayLessonNumber[dayNow] + (index + 1) + "_subject_name");
-                token.ThrowIfCancellationRequested();
-
-                if (cachedLesson == null || cachedLesson != lesson)
-                    if (!(await GetWeekLessons(token))) return false;
 
                 Transform lessonObj = lessonObjects[index];
                 if (lessonObj != null)
@@ -515,12 +524,9 @@ public class Lessons : MonoBehaviour
         }
         else
         {
-            numberLessons = int.Parse(SecureStorage.Load(DayLessonNumber[dayNow] + "number_lessons"));
-            if (numberLessons > 8) numberLessons = 8;
+            token.ThrowIfCancellationRequested();
+                
             if (load) swipePanel.NumLes(numberLessons, token);
-
-            OTtimeLessons = new(numberLessons);
-            DOtimeLessons = new(numberLessons);
 
             for (int i = 0; i < numberLessons; i++)
             {
@@ -534,15 +540,8 @@ public class Lessons : MonoBehaviour
                 lessonObj.Find("TopPanel/GradePanel/Grade/Grade1").GetComponent<TMP_Text>().SetText("");
                 lessonObj.Find("TopPanel/GradePanel/Grade/Grade2/GradeBG").GetComponent<Image>().sprite = NoneGrade;
                 lessonObj.Find("TopPanel/GradePanel/Grade/Grade2").GetComponent<TMP_Text>().SetText("");
-            }
-            token.ThrowIfCancellationRequested();
 
-            for (int i = 0; i < numberLessons; i++)
-            {
                 token.ThrowIfCancellationRequested();
-
-                Transform lessonObj = lessonObjects[i];
-                if (!lessonObj) continue;
 
                 string beginTime = endTime;
                 endTime = SecureStorage.Load(DayLessonNumber[dayNow] + (i + 1) + "_end_time");
@@ -621,7 +620,6 @@ public class Lessons : MonoBehaviour
         return true;
     }
 
-
     List<JToken> JsonToList(string json, string find)
     {
         return ((JArray)(JToken.Parse(json))[find]).ToObject<List<JToken>>();
@@ -696,14 +694,14 @@ public class Lessons : MonoBehaviour
 
     public void Exit()
     {
-        CloseLoad();
-        ChoiceLesson.SetTrigger("Off");
-        lessons.SetTrigger("Off");
+        animatorLoad?.SetTrigger("Load");
+        ChoiceLesson?.SetTrigger("Off");
+        lessons?.SetTrigger("Off");
     }
 
     void Log(string s)
     {
-        Debug.Log(s);
+        //Debug.Log(s);
         if (Logtext != null) Logtext.text += s + " ";
     }
 }

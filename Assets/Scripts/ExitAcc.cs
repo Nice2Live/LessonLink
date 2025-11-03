@@ -3,10 +3,11 @@ using UnityEngine.UI;
 
 public class ExitAcc : MonoBehaviour
 {
-    public ProfilePanelToggle profileManager;
     public Lessons lessons;
     public Button entryBut;
     public WebViewMos webViewMos;
+    public RefreshEntry refreshEntry;
+    public BottonButtons bottonButtons;
     void Awake()
     {
         if (SecureStorage.Load("Entry") != "true")
@@ -19,14 +20,14 @@ public class ExitAcc : MonoBehaviour
     {
         if (SecureStorage.Load("Entry") == "true")
         {
-            entryBut.gameObject.SetActive(true);
-            entryBut.interactable = false;
             lessons.Exit();
-            profileManager.Toggle();
-            webViewMos.Exit();
+            Clear();
+            bottonButtons.Toggle(1);
+            refreshEntry.Entry(Url: "https://school.mos.ru/v3/auth/logout", exit: true);
+             
         }
     }
-    public void ExitWebView()
+    private void Clear()
     {
         PlayerPrefs.DeleteKey("WebView");
         PlayerPrefs.DeleteKey("Cookies");
@@ -39,6 +40,6 @@ public class ExitAcc : MonoBehaviour
         PlayerPrefs.DeleteKey("class_name");
         PlayerPrefs.DeleteKey("last_name");
         PlayerPrefs.DeleteKey("Week");
-        SecureStorage.ReSave("Entry", "false");    
+        SecureStorage.ReSave("Entry", "false");
     }
 }

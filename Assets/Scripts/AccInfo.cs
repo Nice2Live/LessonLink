@@ -11,24 +11,21 @@ using Newtonsoft.Json.Linq;
 
 public class AccInfo : MonoBehaviour
 {
-    public TMP_Text logText1;
-    public TMP_Text logText2;
-    public TMP_Text logText3;
-    public TMP_Text Logtext;
-    public TMP_Text errorText;
+    //public TMP_Text Logtext;
+    public List<TMP_Text> accInfo;
+    public List<Sprite> icons;
     public Image image;
-    public Sprite spritemale;
-    public Sprite spritefemale;
     public WebViewMos webviewmos;
-    private string academic_year_id;
-
+    public RefreshEntry refreshEntry;
     private static readonly HttpClient client = new HttpClient();
 
     void Awake()
-    {
-        PushAccInfo();
-        GetAccInfo();
-        PushAccInfo();
+    {   
+        if (SecureStorage.Load("Entry") == "true")
+        {
+            PushAccInfo();
+            GetAccInfo();
+        }
     }
     public async Task<bool> GetAccInfo()
     {
@@ -66,44 +63,36 @@ public class AccInfo : MonoBehaviour
                 }
                 else
                 {
-                    errorText.text = "Не удалось получить данные с МЕШ";
-
-                    webviewmos.Entry(false, true);
+                    refreshEntry.Entry(accInfo: true);
                     return false;
                 }
             }
             else
             {
-                errorText.text = "Не удалось получить данные с МЕШ";
-
-                webviewmos.Entry(false, true);
+                refreshEntry.Entry(accInfo: true);
                 return false;
             }
         }
         catch (Exception ex)
         {
-            errorText.text = "Не удалось получить данные с МЕШ";
-
-            webviewmos.Entry(false, true);
+            refreshEntry.Entry(accInfo: true);
             return false;
         }
 
         return true;
     }
-    void PushAccInfo()
+    private void PushAccInfo()
     {
-        logText1.text = SecureStorage.Load("last_name") + " " + SecureStorage.Load("first_name");
-        logText2.text = SecureStorage.Load("short_name_school");
-        logText3.text = "Класс " + SecureStorage.Load("class_name");
-        switch (SecureStorage.Load("sex"))
-        {
-            case "male": image.sprite = spritemale;   break;
-            default:     image.sprite = spritefemale; break;
-        }
+        accInfo[0].text = SecureStorage.Load("last_name") + " " + SecureStorage.Load("first_name");
+        accInfo[1].text = SecureStorage.Load("short_name_school") + " " + SecureStorage.Load("class_name");
+        if (SecureStorage.Load("sex") == "male")
+            image.sprite = icons[0];
+        else
+            image.sprite = icons[1];
     }
-    void Log(string s)
-    {
-        Debug.Log(s);
-        if (Logtext != null) Logtext.text += s + "\n";
-    }
+    // void Log(string s)
+    // {
+    //     Debug.Log(s);
+    //     if (Logtext != null) Logtext.text += s + "\n";
+    // }
 }

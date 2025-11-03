@@ -145,6 +145,8 @@ PlayerSettings:
   preloadedAssets:
   - {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   - {fileID: 0}
+  - {fileID: 11400000, guid: 92366f60da8a63949afdd1fee058006c, type: 2}
+  - {fileID: -1879889746688615276, guid: da4845e5e3b23d94ba1b941342d37b89, type: 2}
   metroInputSource: 0
   wsaTransparentSwapchain: 0
   m_HolographicPauseOnTrackingLoss: 1
@@ -825,10 +827,10 @@ PlayerSettings:
   captureStartupLogs: {}
   activeInputHandler: 1
   windowsGamepadBackendHint: 0
-  cloudProjectId: 00ef0c37-c66d-4089-9739-47c19cb4005e
+  cloudProjectId: 1136a5b2-abb1-4fb8-bac0-59a5bf56dd47
   framebufferDepthMemorylessMode: 0
   qualitySettingsNames: []
-  projectName: LessonLink 2025-09-20_16-28-22
+  projectName: LessonLink
   organizationId: unity_a6bf621b91d9973a4035
   cloudEnabled: 0
   legacyClampBlendShapeWeights: 0

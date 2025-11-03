@@ -5,7 +5,7 @@ using System.Text;
 
 public static class SecureStorage
 {
-    private static string key = "12334567890"; // ключ-секрет заменён за заглушку
+    private static string key = "test";
 
     public static void Save(string id, string value)
     {
@@ -29,7 +29,7 @@ public static class SecureStorage
         return Decrypt(encrypted, key);
     }
     
-    private static string Encrypt(string text, string key)
+    public static string Encrypt(string text, string key = "test")
     {
         byte[] data = Encoding.UTF8.GetBytes(text);
         using (Aes aes = Aes.Create())
