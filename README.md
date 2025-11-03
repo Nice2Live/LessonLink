@@ -7,7 +7,7 @@ _Простая альтернатива МЭШ для Android_
 Скачать:
  - Telegram bot: [@LessonLinkApp_bot](https://t.me/LessonLinkApp_bot)
     
-<img src="https://github.com/user-attachments/assets/a937924c-4756-4ad0-b203-94d20ec12d3d" width="300" /> <img src="https://github.com/user-attachments/assets/8dabe5c7-54a9-4734-9cd1-b03ca818ae54" width="300" /> <img src="https://github.com/user-attachments/assets/1deb5df0-e71e-4077-a152-5e202eb4bbba" width="300" />
+<img src="https://github.com/user-attachments/assets/a937924c-4756-4ad0-b203-94d20ec12d3d" width="200" /> <img src="https://github.com/user-attachments/assets/8dabe5c7-54a9-4734-9cd1-b03ca818ae54" width="200" /> <img src="https://github.com/user-attachments/assets/1deb5df0-e71e-4077-a152-5e202eb4bbba" width="200" />
  
 Основные особенности:
 - 📡 **Безопасность** — приложение никуда не передаёт ваши данные, они хранятся только на вашем телефоне в зашифрованном формате.  
